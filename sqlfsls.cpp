@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "stat on %s failed!\n", db);
         exit(1);
     }
-    if(S_ISREG(s.st_mode)<0)
+    if(!S_ISREG(s.st_mode))
     {
         fprintf(stderr, "Not a regular file: %s\n", db);
         exit(1);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
         sqlfs_init(db);
     }
 
-    if (!sqlfs_proc_access(sqlfs, file, R_OK)) {
+    if (sqlfs_proc_access(sqlfs, file, R_OK) != 0) {
         fprintf(stderr, "Cannot access %s in %s\n", file, db);
         //return 1;
     }
@@ -102,8 +102,12 @@ int main(int argc, char *argv[])
     DirEntries entries;
     // using FUSE readdir in old getdir() style which gives us the whole thing at once
     int ret = sqlfs_proc_readdir(0, file, (void *)&entries, (fuse_fill_dir_t)fill_dir, 0, NULL);
-    for(DirEntries::const_iterator i = entries.begin() + 2; i != entries.end(); ++i) {
-        std::cout << *i << "\n"; // this will print all the contents of *features*
+    if (ret != 0) {
+        fprintf(stderr, "Cannot read %s as a directory in %s\n", file, db);
+    } else {
+        for(DirEntries::const_iterator i = entries.begin() + 2; i != entries.end(); ++i) {
+            std::cout << *i << "\n"; // this will print all the contents of *features*
+        }
     }
 
     sqlfs_close(sqlfs);
