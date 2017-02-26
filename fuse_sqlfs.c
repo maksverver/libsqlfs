@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "sqlfs.h"
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 int main(int argc, char **argv)
 {
@@ -29,26 +30,21 @@ int main(int argc, char **argv)
     sqlfs_t *sqlfs = 0;
 
 /* get the password from stdin */
-#  define BUF_SIZE 8192
-    char password[BUF_SIZE];
-    char *p = fgets(password, BUF_SIZE, stdin);
-    if (p)
+    char *password = getpass("Password: ");
+    if (!password)
     {
-        /* remove trailing newline */
-        size_t last = strlen(p) - 1;
-        if (p[last] == '\n')
-            p[last] = '\0';
-        if (!sqlfs_open_password(db, password, &sqlfs)) {
-            fprintf(stderr, "Failed to open: %s\n", db);
-            return 1;
-        }
-        sqlfs_init_password(db, password);
-        memset(password, 0, BUF_SIZE); // zero out password
+        fprintf(stderr, "Failed to read password!");
+        return 1;
     }
-    else // this is for the sqlfs_init() line below
-#endif /* HAVE_LIBSQLCIPHER */
+    if (!sqlfs_open_password(db, password, &sqlfs)) {
+        fprintf(stderr, "Failed to open: %s\n", db);
+        return 1;
+    }
+    memset(password, 0, strlen(password));
+#else
 /* if you want to mount a file with a password */
-        sqlfs_init(db);
+    sqlfs_init(db);
+#endif /* HAVE_LIBSQLCIPHER */
 
     rc = sqlfs_fuse_main(argc, argv);
     sqlfs_destroy();

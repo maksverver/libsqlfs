@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -42,20 +43,14 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_LIBSQLCIPHER
 /* get the password from stdin */
-    char password[BUF_SIZE];
-    char *p = fgets(password, BUF_SIZE, stdin);
-    if (p)
+    char *password = getpass("Password: ");
+    if (password)
     {
-        /* remove trailing newline */
-        size_t last = strlen(p) - 1;
-        if (p[last] == '\n')
-            p[last] = '\0';
-        if (!sqlfs_open_password(db, password, &sqlfs)) {
-            fprintf(stderr, "Failed to open: %s\n", db);
-            return 1;
-        }
-        sqlfs_init_password(db, password);
-        memset(password, 0, BUF_SIZE); // zero out password
+      if (!sqlfs_open_password(db, password, &sqlfs)) {
+        fprintf(stderr, "Failed to open: %s\n", db);
+        return 1;
+      }
+      memset(password, 0, strlen(password));
     }
     else
 #endif /* HAVE_LIBSQLCIPHER */
